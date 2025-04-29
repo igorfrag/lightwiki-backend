@@ -8,8 +8,19 @@ const port = 3000;
 
 const db = require('./src/config/db.js');
 
-app.get('/', (req, res) => {
-    res.send('Welcome to the User API!');
+app.get('/api/posts', async (req, res) => {
+    try {
+        const result = await db.query(
+            'SELECT * FROM posts ORDER BY created_at DESC LIMIT 5'
+        );
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Get failed' });
+        }
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Erro ao buscar posts');
+        res.status(500).send('Erro interno');
+    }
 });
 
 app.get('/api/posts/:id', async (req, res) => {
@@ -42,6 +53,23 @@ app.post('/api/new', async (req, res) => {
         res.status(201).json(result.rows[0]);
     } catch (err) {
         console.error('Erro ao postar', err);
+        res.status(500).send('Erro interno');
+    }
+});
+
+app.delete('/api/delete/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await db.query(
+            'DELETE FROM posts WHERE id = $1 RETURNING *',
+            [id]
+        );
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Post not found' });
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error('Erro ao buscar post', err);
         res.status(500).send('Erro interno');
     }
 });
