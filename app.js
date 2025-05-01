@@ -3,6 +3,9 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
+const loginRoute = require('./routes/login.js');
+const registerRoute = require('./routes/register.js');
+
 const localPath = `${process.cwd()}/uploads`;
 
 const storage = multer.diskStorage({
@@ -25,6 +28,8 @@ const app = express();
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(cors());
+app.use(loginRoute);
+app.use(registerRoute);
 const port = 3000;
 
 const db = require('./src/config/db.js');
