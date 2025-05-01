@@ -1,8 +1,29 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+const localPath = `${process.cwd()}/uploads`;
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, localPath);
+    },
+    filename: function (req, file, cb) {
+        const ext = path.extname(file.originalname);
+        const uniqueFilename =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+        cb(null, uniqueFilename + ext);
+    },
+});
+
+const upload = multer({ storage: storage });
+
 const cors = require('cors');
 
 const app = express();
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(cors());
 const port = 3000;
 
@@ -39,16 +60,18 @@ app.get('/api/posts/:id', async (req, res) => {
     }
 });
 
-app.post('/api/new', async (req, res) => {
+app.post('/api/new', upload.single('image'), async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
+
     try {
         const { title, body } = req.body;
+        const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
         if (!title || !body) {
             return res.status(400).json('Title and body required');
         }
         const result = await db.query(
-            'INSERT INTO posts (title, body, created_at) VALUES ($1, $2, NOW()) RETURNING *',
-            [title, body]
+            'INSERT INTO posts (title, body, created_at, image_path) VALUES ($1, $2, NOW(), $3) RETURNING *',
+            [title, body, imagePath]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -60,16 +83,31 @@ app.post('/api/new', async (req, res) => {
 app.delete('/api/delete/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await db.query(
-            'DELETE FROM posts WHERE id = $1 RETURNING *',
-            [id]
-        );
+        const result = await db.query('SELECT * FROM posts WHERE id = $1', [
+            id,
+        ]);
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Post not found' });
         }
-        res.json(result.rows[0]);
+        const imagePath = result.rows[0].image_path;
+        if (imagePath !== 'null') {
+            const filePath = process.cwd();
+            console.log(filePath + imagePath);
+            fs.unlink(filePath + imagePath, (err) => {
+                if (err) {
+                    console.error('Erro ao deletar imagem', err.message);
+                }
+            });
+        }
+
+        const deleteResult = await db.query(
+            'DELETE FROM posts WHERE id = $1 RETURNING *',
+            [id]
+        );
+
+        res.json(deleteResult.rows[0]);
     } catch (err) {
-        console.error('Erro ao buscar post', err);
+        console.error('Erro ao deletar post', err);
         res.status(500).send('Erro interno');
     }
 });
