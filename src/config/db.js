@@ -9,6 +9,11 @@ const pool = new Pool({
     port: process.env.PGPORT,
 });
 
+const firstPost = {
+    title: 'Hello World!',
+    body: 'Welcome to my simple note-taking app :)',
+    imagePath: '/uploads/morning-12345.jpg',
+};
 setupDB();
 
 async function setupDB() {
@@ -45,7 +50,11 @@ created_at  timestamp with time zone,
 image_path VARCHAR
 )`);
         console.log('posts Table created');
-        await pool.end();
+        await pool.query(
+            'INSERT INTO posts (title, body, created_at, image_path) VALUES ($1, $2, NOW(), $3) RETURNING *',
+            [firstPost.title, firstPost.body, firstPost.imagePath]
+        );
+        console.log('DB Setup finished');
     } else {
         console.log(`${database} is already setup`);
         await client.end();
