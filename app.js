@@ -28,8 +28,7 @@ const app = express();
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(cors());
-app.use(loginRoute);
-app.use(registerRoute);
+
 const port = 3000;
 
 const db = require('./src/config/db.js');
@@ -40,7 +39,7 @@ app.get('/api/posts', async (req, res) => {
             'SELECT * FROM posts ORDER BY created_at DESC LIMIT 5'
         );
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Get failed' });
+            return res.json(result.rows);
         }
         res.json(result.rows);
     } catch (err) {
@@ -116,6 +115,9 @@ app.delete('/api/delete/:id', async (req, res) => {
         res.status(500).send('Erro interno');
     }
 });
+
+app.use(loginRoute);
+app.use(registerRoute);
 
 app.listen(port, '0.0.0.0', () => {
     console.log(`Server is running at http://localhost:${port}`);
