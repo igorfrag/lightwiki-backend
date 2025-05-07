@@ -12,7 +12,7 @@ app.use(
         origin: [
             'http://localhost:5173',
             'http://localhost:4173',
-            'http://frontend',
+            'http://localhost:8080',
         ] /* Dev + Preview + Docker Origins*/,
         credentials: true,
     })

@@ -9,6 +9,13 @@ registerRoute.post('/api/register', async (req, res) => {
         if (!username || !password || !name) {
             return res.status(400).json({ error: 'All fields required' });
         }
+        const checkExisting = await db.query(
+            'SELECT * FROM users WHERE username = $1',
+            [username]
+        );
+        if (checkExisting.rows.length > 0) {
+            return res.status(400).json({ error: 'Username exists' });
+        }
         const hashedPassword = await bcrypt.hashSync(password);
         const user = await db.query(
             'INSERT INTO users (username, password, name) VALUES ($1, $2, $3) RETURNING *',
