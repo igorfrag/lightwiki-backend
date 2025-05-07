@@ -2,8 +2,23 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const app = express();
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
 
-const loginRoute = require('./routes/login.js');
+app.use(express.json());
+app.use(
+    cors({
+        origin: [
+            'http://localhost:5173',
+            'http://localhost:4173',
+            'http://frontend',
+        ] /* Dev + Preview + Docker Origins*/,
+        credentials: true,
+    })
+);
+app.use(cookieParser());
+const { loginRoute, authenticateToken } = require('./routes/login.js');
 const registerRoute = require('./routes/register.js');
 
 const localPath = `${process.cwd()}/uploads`;
@@ -22,12 +37,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-const cors = require('cors');
-
-const app = express();
-app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use(cors());
 
 const port = 3000;
 
