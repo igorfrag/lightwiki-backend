@@ -43,22 +43,29 @@ const port = 3000;
 
 const db = require('./src/config/db.js');
 
-app.get('/api/posts', async (req, res) => {
+app.get('/api/posts/:page', async (req, res) => {
+    const POSTS_PER_PAGE = 5;
+    const { page } = req.params;
+
     try {
+        const totalPosts = await db.query('SELECT COUNT(*) FROM posts');
+        const maxPages = totalPosts.rows[0].count / POSTS_PER_PAGE;
         const result = await db.query(
-            'SELECT * FROM posts ORDER BY created_at DESC LIMIT 5'
+            'SELECT * FROM posts ORDER BY created_at DESC LIMIT $1 OFFSET ($2 - 1) * $1',
+            [POSTS_PER_PAGE, page]
         );
         if (result.rows.length === 0) {
             return res.json(result.rows);
         }
-        res.json(result.rows);
+        const content = result.rows;
+        res.json({ content, maxPages });
     } catch (err) {
         console.error('Erro ao buscar posts');
         res.status(500).send('Erro interno');
     }
 });
 
-app.get('/api/posts/:id', async (req, res) => {
+app.get('/api/post/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const result = await db.query('SELECT * FROM posts WHERE id = $1', [
