@@ -18,7 +18,7 @@ registerRoute.post('/api/register', async (req, res) => {
         }
         const hashedPassword = await bcrypt.hashSync(password);
         const user = await db.query(
-            'INSERT INTO users (username, password, name) VALUES ($1, $2, $3) RETURNING *',
+            'INSERT INTO users (username, password, name, id) VALUES ($1, $2, $3, gen_random_uuid()) RETURNING *',
             [username, hashedPassword, name]
         );
         res.status(201).json(user.rows[0]);

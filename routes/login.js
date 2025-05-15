@@ -52,7 +52,7 @@ loginRoute.post('/api/logout', authenticateToken, (req, res) => {
 });
 
 loginRoute.get('/api/me', authenticateToken, (req, res) => {
-    res.json({ user: req.username });
+    res.json({ user: req.username, id: req.id });
 });
 
 function authenticateToken(req, res, next) {
@@ -65,6 +65,7 @@ function authenticateToken(req, res, next) {
             return res.status(403).json({ error: 'Invalid token' });
         }
         req.username = user.username;
+        req.id = user.id;
         next();
     });
 }

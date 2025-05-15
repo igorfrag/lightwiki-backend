@@ -36,18 +36,19 @@ async function setupDB() {
         await client.end();
         await pool.connect();
         await pool.query(`CREATE TABLE users (
-id serial PRIMARY KEY,
-username VARCHAR(12) NOT NULL,
-password VARCHAR NOT NULL,
-name VARCHAR NOT NULL
+                        id uuid PRIMARY KEY,
+                        username VARCHAR(12) NOT NULL,
+                        password VARCHAR NOT NULL,
+                        name VARCHAR NOT NULL
 )`);
         console.log('users Table created');
         await pool.query(`CREATE TABLE posts (
-id serial PRIMARY KEY,
-title VARCHAR(50) NOT NULL,
-body VARCHAR NOT NULL,
-created_at  timestamp with time zone,
-image_path VARCHAR
+                        id serial PRIMARY KEY,
+                        title VARCHAR(50) NOT NULL,
+                        body VARCHAR NOT NULL,
+                        created_at  timestamp with time zone,
+                        image_path VARCHAR,
+                        user_id uuid
 )`);
         console.log('posts Table created');
         await pool.query(

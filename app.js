@@ -49,9 +49,13 @@ app.get('/api/posts/:page', async (req, res) => {
 
     try {
         const totalPosts = await db.query('SELECT COUNT(*) FROM posts');
-        const maxPages = totalPosts.rows[0].count / POSTS_PER_PAGE;
+        const maxPages = Math.ceil(totalPosts.rows[0].count / POSTS_PER_PAGE);
         const result = await db.query(
-            'SELECT * FROM posts ORDER BY created_at DESC LIMIT $1 OFFSET ($2 - 1) * $1',
+            `SELECT posts.*, users.name 
+            FROM posts 
+            LEFT JOIN users ON posts.user_id = users.id
+            ORDER BY posts.created_at DESC
+            LIMIT $1 OFFSET ($2 - 1) * $1`,
             [POSTS_PER_PAGE, page]
         );
         if (result.rows.length === 0) {
@@ -68,9 +72,13 @@ app.get('/api/posts/:page', async (req, res) => {
 app.get('/api/post/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await db.query('SELECT * FROM posts WHERE id = $1', [
-            id,
-        ]);
+        const result = await db.query(
+            `SELECT posts.*, users.name 
+            FROM posts 
+            LEFT JOIN users ON posts.user_id = users.id 
+            WHERE posts.id = $1`,
+            [id]
+        );
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Post not found' });
         }
@@ -85,14 +93,14 @@ app.post('/api/new', upload.single('image'), async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
 
     try {
-        const { title, body } = req.body;
+        const { title, body, uuid } = req.body;
         const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
         if (!title || !body) {
             return res.status(400).json('Title and body required');
         }
         const result = await db.query(
-            'INSERT INTO posts (title, body, created_at, image_path) VALUES ($1, $2, NOW(), $3) RETURNING *',
-            [title, body, imagePath]
+            'INSERT INTO posts (title, body, created_at, image_path, user_id) VALUES ($1, $2, NOW(), $3, $4) RETURNING *',
+            [title, body, imagePath, uuid]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
