@@ -1,10 +1,14 @@
 const express = require('express');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 const app = express();
+const fs = require('fs');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const { loginRoute, authenticateToken } = require('./routes/login.js');
+const registerRoute = require('./routes/register.js');
+const {
+    uploadMiddleware,
+    uploadStaticPath,
+} = require('./middlewares/upload.js');
 
 app.use(express.json());
 app.use(
@@ -18,26 +22,7 @@ app.use(
     })
 );
 app.use(cookieParser());
-const { loginRoute, authenticateToken } = require('./routes/login.js');
-const registerRoute = require('./routes/register.js');
-
-const localPath = `${process.cwd()}/uploads`;
-
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, localPath);
-    },
-    filename: function (req, file, cb) {
-        const ext = path.extname(file.originalname);
-        const uniqueFilename =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cb(null, uniqueFilename + ext);
-    },
-});
-
-const upload = multer({ storage: storage });
-
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', uploadStaticPath);
 
 const port = 3000;
 
@@ -89,9 +74,7 @@ app.get('/api/post/:id', async (req, res) => {
     }
 });
 
-app.post('/api/new', upload.single('image'), async (req, res) => {
-    res.set('Access-Control-Allow-Origin', '*');
-
+app.post('/api/new', uploadMiddleware, async (req, res) => {
     try {
         const { title, body, uuid } = req.body;
         const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
